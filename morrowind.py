@@ -36,22 +36,33 @@ def main():
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
     # Load config
-    config = load_config("config.json")
+    # config = load_config("config.json")
 
     # Argument parser
     parser = argparse.ArgumentParser(description="Morrowind utilities.")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Command: start
+    # Command: start -> default
     start_parser = subparsers.add_parser("start", help="Start the game.")
+
+    # Command: launcher
+    launcher_parser = subparsers.add_parser("launcher", help="Run the launcher.")
 
     # Command: navmeshtool
     navmeshtool_parser = subparsers.add_parser("navmeshtool", help="Run navmeshtool.")
 
     # Commands execution
     args = parser.parse_args()
-    if args.command == "start":
+    if args.command == "start" or args.command is None:
         start_morrowind()
+    elif args.command == "launcher":
+        pass
+    elif args.command == "navmeshtool":
+        pass
+    elif args.command == "save":
+        pass
+    elif args.command == "restore":
+        pass
     else:
         parser.print_help()
 
