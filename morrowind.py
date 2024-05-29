@@ -18,11 +18,6 @@ def load_file_as_json(json_file):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def load_config():
-    pass
-
-# ---------------------------------------------------------------------------------------------------------------------
-
 def start_morrowind():
     logging.info("Starting Morrowind...")
     result = subprocess.run("", check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -39,6 +34,9 @@ def load_config():
 
 def main():
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
+
+    # Load config
+    config = load_config("config.json")
 
     # Argument parser
     parser = argparse.ArgumentParser(description="Morrowind utilities.")
