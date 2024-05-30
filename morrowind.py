@@ -18,17 +18,22 @@ def load_file_as_json(json_file):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def start_morrowind():
-    logging.info("Starting Morrowind...")
-    result = subprocess.run("", check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    logging.info(result.stdout.decode("utf-8"))
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-def load_config():
+def load_config(configfile):
+    script_path = os.path.dirname(__file__)
     config = load_file_as_json(os.path.join(script_path, configfile))
     if not config:
         return None
+    return config
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def start_morrowind(config):
+    logging.info("Starting Morrowind...")
+    subprocess.Popen([os.path.join(config["openmw_dir"], "openmw")])
+    
+# ---------------------------------------------------------------------------------------------------------------------
+
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -36,7 +41,7 @@ def main():
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
     # Load config
-    # config = load_config("config.json")
+    config = load_config("config.json")
 
     # Argument parser
     parser = argparse.ArgumentParser(description="Morrowind utilities.")
@@ -54,7 +59,7 @@ def main():
     # Commands execution
     args = parser.parse_args()
     if args.command == "start" or args.command is None:
-        start_morrowind()
+        start_morrowind(config)
     elif args.command == "launcher":
         pass
     elif args.command == "navmeshtool":
