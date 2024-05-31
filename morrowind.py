@@ -48,7 +48,7 @@ def copy_directory(src, dst, overwrite=False):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def copy_directory_ignore_case(src, dst):
+def copy_directory_ignore_case_gpt(src, dst):
     if not os.path.isdir(src):
         raise ValueError(f"Source directory '{src}' does not exist or is not a directory")
     
@@ -92,6 +92,28 @@ def copy_directory_ignore_case(src, dst):
             dst_file = os.path.join(dst_dir_actual, dst_file_name_actual)
             # shutil.copy2(src_file, dst_file)
             print(f"Copied '{src_file}' to '{dst_file}'")
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def list_file_paths(directory):
+    if not os.path.isdir(directory):
+        logging.error("Directory %s does not exist or is not a directory", directory)
+        return []
+    return [str(file) for file in Path(directory).rglob('*') if file.is_file()]
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def copy_directory_ignore_case(src, dst):
+    if not os.path.isdir(src):
+        logging.error("Source directory %s does not exist or is not a directory", src)
+        return
+    
+    if not os.path.isdir(dst):
+        logging.error("Destination directory %s does not exist or is not a directory", dst)
+        return
+
+    src_file_paths = list_file_paths(src)
+    dst_file_paths = list_file_paths(dst)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
