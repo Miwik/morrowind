@@ -4,6 +4,7 @@ import subprocess
 import os
 import json
 import shutil
+from pathlib import Path
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -31,9 +32,10 @@ def remove_directory(directory_path):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def copy_directory(src, dst):
-    if os.path.isdir(dst):
-        remove_directory(dst)
+def copy_directory(src, dst, overwrite=False):
+    if overwrite:
+        if os.path.isdir(dst):
+            remove_directory(dst)
     try:
         shutil.copytree(src, dst)
         logging.info("Directory %s successfully copied to %s", src, dst)
@@ -43,6 +45,76 @@ def copy_directory(src, dst):
     except OSError as e:
         logging.error("OS error occurred while copying directory: %s", e)
     return False
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def copy_directory_ignore_case(src, dst):
+    if not os.path.isdir(src):
+        raise ValueError(f"Source directory '{src}' does not exist or is not a directory")
+    
+    if not os.path.isdir(dst):
+        raise ValueError(f"Destination directory '{dst}' does not exist or is not a directory")
+    
+    # Build a case-insensitive map of existing files and directories in the destination
+    dst_lower_map = {item.lower(): item for item in os.listdir(dst)}
+    
+    for root, dirs, files in os.walk(src):
+        print(f"root: {root}, dirs: {dirs}, files: {files}")
+
+        # Determine the relative path from the source root
+        rel_path = os.path.relpath(root, src)
+        dst_dir = os.path.join(dst, rel_path)
+        
+        # Ensure the destination directory exists
+        if rel_path != '.':
+            dst_dir_lower = dst_dir.lower()
+            dst_dir_actual = dst_lower_map.get(dst_dir_lower, dst_dir)
+            # os.makedirs(dst_dir_actual, exist_ok=True)
+            print(f"Created directory '{dst_dir_actual}'")
+        else:
+            dst_dir_actual = dst
+        
+        # Copy subdirectories
+        for dir_name in dirs:
+            src_subdir = os.path.join(root, dir_name)
+            dst_subdir_name_lower = dir_name.lower()
+            dst_subdir_name_actual = dst_lower_map.get(dst_subdir_name_lower, dir_name)
+            dst_subdir = os.path.join(dst_dir_actual, dst_subdir_name_actual)
+            if not os.path.exists(dst_subdir):
+                # os.makedirs(dst_subdir)
+                print(f"Created directory '{dst_subdir}'")
+        
+        # Copy files
+        for file_name in files:
+            src_file = os.path.join(root, file_name)
+            dst_file_name_lower = file_name.lower()
+            dst_file_name_actual = dst_lower_map.get(dst_file_name_lower, file_name)
+            dst_file = os.path.join(dst_dir_actual, dst_file_name_actual)
+            # shutil.copy2(src_file, dst_file)
+            print(f"Copied '{src_file}' to '{dst_file}'")
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def list_directories(path):
+    try:
+        # Create a Path object for the directory
+        directory = Path(path)
+        # Filter out only directories
+        directories = [item.name for item in directory.iterdir() if item.is_dir()]
+        return directories
+    except Exception as e:
+        logging.error("An error occurred: %s", e)
+        return []
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def find_directory(start_path, target_names):
+    start_path = Path(start_path)
+    for dirpath, dirnames, filenames in os.walk(start_path):
+        for dir_name in dirnames:
+            if dir_name in target_names:
+                return Path(dirpath)
+    return None
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -75,13 +147,40 @@ def navmeshtool(config):
 
 def save(config, name):
     logging.info("Saving game directory to %s...", name)
-    return copy_directory(config["morrowind_dir"], os.path.join(config["steam_common_dir"], config["morrowind_dir_name"] + " (" + name + ")"))
+    return copy_directory(config["morrowind_dir"], os.path.join(config["steam_common_dir"], config["morrowind_dir_name"] + " (" + name + ")"), overwrite=True)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
 def restore(config, name):
     logging.info("Restoring game directory %s...", name)
-    return copy_directory(os.path.join(config["steam_common_dir"], config["morrowind_dir_name"] + " (" + name + ")"), config["morrowind_dir"])
+    return copy_directory(os.path.join(config["steam_common_dir"], config["morrowind_dir_name"] + " (" + name + ")"), config["morrowind_dir"], overwrite=True)
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def install(config, mod):
+    logging.info("Installing mod %s...", mod)
+
+    # Check if the mod directory exists
+    if not os.path.isdir(mod):
+        logging.error("Mod directory %s does not exist.", mod)
+        return
+
+    # Get the list of directories in the morrowind data files directory
+    mw_data_files_dir_names = list_directories(config["morrowind_data_dir"])
+    if not mw_data_files_dir_names:
+        logging.error("Could not find any directories in the Morrowind data files directory.")
+        return
+    print(mw_data_files_dir_names)
+
+    # Go to the mod subdirectory where data files are located
+    mod_data_files_dir = find_directory(mod, mw_data_files_dir_names)
+    if not mod_data_files_dir:
+        logging.error("Could not find the mod data files directory.")
+        return
+    print(mod_data_files_dir)
+
+    # Copy the mod data files to the Morrowind data files directory
+    copy_directory_ignore_case(mod_data_files_dir, config["morrowind_data_dir"])
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -112,6 +211,10 @@ def main():
     restore_parser = subparsers.add_parser("restore", help="Restore game directory.")
     restore_parser.add_argument("name", help="Name of the save.")
 
+    # Command: install
+    install_parser = subparsers.add_parser("install", help="Install mod.")
+    install_parser.add_argument("mod", help="Mod to install.")
+
     # Commands execution
     args = parser.parse_args()
     if args.command == "start" or args.command is None:
@@ -124,6 +227,8 @@ def main():
         save(config, args.name)
     elif args.command == "restore":
         restore(config, args.name)
+    elif args.command == "install":
+        install(config, args.mod)
     else:
         parser.print_help()
 
