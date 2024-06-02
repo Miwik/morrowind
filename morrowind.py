@@ -49,53 +49,6 @@ def copy_directory(src, dst, overwrite=False):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-# def copy_directory_ignore_case_gpt(src, dst):
-#     if not os.path.isdir(src):
-#         raise ValueError(f"Source directory '{src}' does not exist or is not a directory")
-    
-#     if not os.path.isdir(dst):
-#         raise ValueError(f"Destination directory '{dst}' does not exist or is not a directory")
-    
-#     # Build a case-insensitive map of existing files and directories in the destination
-#     dst_lower_map = {item.lower(): item for item in os.listdir(dst)}
-    
-#     for root, dirs, files in os.walk(src):
-#         print(f"root: {root}, dirs: {dirs}, files: {files}")
-
-#         # Determine the relative path from the source root
-#         rel_path = os.path.relpath(root, src)
-#         dst_dir = os.path.join(dst, rel_path)
-        
-#         # Ensure the destination directory exists
-#         if rel_path != '.':
-#             dst_dir_lower = dst_dir.lower()
-#             dst_dir_actual = dst_lower_map.get(dst_dir_lower, dst_dir)
-#             # os.makedirs(dst_dir_actual, exist_ok=True)
-#             print(f"Created directory '{dst_dir_actual}'")
-#         else:
-#             dst_dir_actual = dst
-        
-#         # Copy subdirectories
-#         for dir_name in dirs:
-#             src_subdir = os.path.join(root, dir_name)
-#             dst_subdir_name_lower = dir_name.lower()
-#             dst_subdir_name_actual = dst_lower_map.get(dst_subdir_name_lower, dir_name)
-#             dst_subdir = os.path.join(dst_dir_actual, dst_subdir_name_actual)
-#             if not os.path.exists(dst_subdir):
-#                 # os.makedirs(dst_subdir)
-#                 print(f"Created directory '{dst_subdir}'")
-        
-#         # Copy files
-#         for file_name in files:
-#             src_file = os.path.join(root, file_name)
-#             dst_file_name_lower = file_name.lower()
-#             dst_file_name_actual = dst_lower_map.get(dst_file_name_lower, file_name)
-#             dst_file = os.path.join(dst_dir_actual, dst_file_name_actual)
-#             # shutil.copy2(src_file, dst_file)
-#             print(f"Copied '{src_file}' to '{dst_file}'")
-
-# ---------------------------------------------------------------------------------------------------------------------
-
 def list_file_paths(directory):
     if not os.path.isdir(directory):
         logging.error("Directory %s does not exist or is not a directory", directory)
@@ -115,6 +68,18 @@ def copy_directory_ignore_case(src, dst):
 
     src_file_paths = list_file_paths(src)
     dst_file_paths = list_file_paths(dst)
+
+    # Cut to data files directory
+    # src_file_paths = [file[len(src):] for file in src_file_paths]
+    dst_file_paths = [file[len(dst):] for file in dst_file_paths]
+
+    logging.info("dst_file_paths: %s", dst_file_paths)
+
+    for src_file_path in src_file_paths:
+        for dst_file_path in dst_file_paths:
+            if src_file_path.lower() == dst_file_path.lower():
+                logging.info("File %s already exists in destination directory %s", src_file_path, dst_file_path)
+                break
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -222,13 +187,6 @@ def install(config, mod):
     if not os.path.isdir(mod):
         logging.error("Mod directory %s does not exist.", mod)
         return
-
-    # # Get the list of directories in the morrowind data files directory
-    # mw_data_files_dir_names = list_directories(config["morrowind_data_dir"])
-    # if not mw_data_files_dir_names:
-    #     logging.error("Could not find any directories in the Morrowind data files directory.")
-    #     return
-    # print(mw_data_files_dir_names)
 
     # Go to the mod subdirectory where data files are located
     mod_data_files_dir = find_mod_data_files_directory(config, mod) # find_directory(mod, mw_data_files_dir_names)
