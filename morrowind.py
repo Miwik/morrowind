@@ -4,6 +4,7 @@ import subprocess
 import os
 import json
 import shutil
+import fnmatch
 from pathlib import Path
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -48,50 +49,50 @@ def copy_directory(src, dst, overwrite=False):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def copy_directory_ignore_case_gpt(src, dst):
-    if not os.path.isdir(src):
-        raise ValueError(f"Source directory '{src}' does not exist or is not a directory")
+# def copy_directory_ignore_case_gpt(src, dst):
+#     if not os.path.isdir(src):
+#         raise ValueError(f"Source directory '{src}' does not exist or is not a directory")
     
-    if not os.path.isdir(dst):
-        raise ValueError(f"Destination directory '{dst}' does not exist or is not a directory")
+#     if not os.path.isdir(dst):
+#         raise ValueError(f"Destination directory '{dst}' does not exist or is not a directory")
     
-    # Build a case-insensitive map of existing files and directories in the destination
-    dst_lower_map = {item.lower(): item for item in os.listdir(dst)}
+#     # Build a case-insensitive map of existing files and directories in the destination
+#     dst_lower_map = {item.lower(): item for item in os.listdir(dst)}
     
-    for root, dirs, files in os.walk(src):
-        print(f"root: {root}, dirs: {dirs}, files: {files}")
+#     for root, dirs, files in os.walk(src):
+#         print(f"root: {root}, dirs: {dirs}, files: {files}")
 
-        # Determine the relative path from the source root
-        rel_path = os.path.relpath(root, src)
-        dst_dir = os.path.join(dst, rel_path)
+#         # Determine the relative path from the source root
+#         rel_path = os.path.relpath(root, src)
+#         dst_dir = os.path.join(dst, rel_path)
         
-        # Ensure the destination directory exists
-        if rel_path != '.':
-            dst_dir_lower = dst_dir.lower()
-            dst_dir_actual = dst_lower_map.get(dst_dir_lower, dst_dir)
-            # os.makedirs(dst_dir_actual, exist_ok=True)
-            print(f"Created directory '{dst_dir_actual}'")
-        else:
-            dst_dir_actual = dst
+#         # Ensure the destination directory exists
+#         if rel_path != '.':
+#             dst_dir_lower = dst_dir.lower()
+#             dst_dir_actual = dst_lower_map.get(dst_dir_lower, dst_dir)
+#             # os.makedirs(dst_dir_actual, exist_ok=True)
+#             print(f"Created directory '{dst_dir_actual}'")
+#         else:
+#             dst_dir_actual = dst
         
-        # Copy subdirectories
-        for dir_name in dirs:
-            src_subdir = os.path.join(root, dir_name)
-            dst_subdir_name_lower = dir_name.lower()
-            dst_subdir_name_actual = dst_lower_map.get(dst_subdir_name_lower, dir_name)
-            dst_subdir = os.path.join(dst_dir_actual, dst_subdir_name_actual)
-            if not os.path.exists(dst_subdir):
-                # os.makedirs(dst_subdir)
-                print(f"Created directory '{dst_subdir}'")
+#         # Copy subdirectories
+#         for dir_name in dirs:
+#             src_subdir = os.path.join(root, dir_name)
+#             dst_subdir_name_lower = dir_name.lower()
+#             dst_subdir_name_actual = dst_lower_map.get(dst_subdir_name_lower, dir_name)
+#             dst_subdir = os.path.join(dst_dir_actual, dst_subdir_name_actual)
+#             if not os.path.exists(dst_subdir):
+#                 # os.makedirs(dst_subdir)
+#                 print(f"Created directory '{dst_subdir}'")
         
-        # Copy files
-        for file_name in files:
-            src_file = os.path.join(root, file_name)
-            dst_file_name_lower = file_name.lower()
-            dst_file_name_actual = dst_lower_map.get(dst_file_name_lower, file_name)
-            dst_file = os.path.join(dst_dir_actual, dst_file_name_actual)
-            # shutil.copy2(src_file, dst_file)
-            print(f"Copied '{src_file}' to '{dst_file}'")
+#         # Copy files
+#         for file_name in files:
+#             src_file = os.path.join(root, file_name)
+#             dst_file_name_lower = file_name.lower()
+#             dst_file_name_actual = dst_lower_map.get(dst_file_name_lower, file_name)
+#             dst_file = os.path.join(dst_dir_actual, dst_file_name_actual)
+#             # shutil.copy2(src_file, dst_file)
+#             print(f"Copied '{src_file}' to '{dst_file}'")
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -130,13 +131,48 @@ def list_directories(path):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def find_directory(start_path, target_names):
+def find_directory_or_filename(start_path, target_names):
     start_path = Path(start_path)
     for dirpath, dirnames, filenames in os.walk(start_path):
         for dir_name in dirnames:
             if dir_name in target_names:
                 return Path(dirpath)
+        for filename in filenames:
+            for target_name in target_names:
+                if fnmatch.fnmatchcase(filename.lower(), target_name):
+                    return Path(dirpath)
     return None
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def get_data_files_dir_hints(config):
+    # Dirs, filenames extensions to look for
+    return list_directories(config["morrowind_data_dir"]) + ["*.esm", "*.esp", "*.bsa", "*.omwaddon"]
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def match_case_insensitive(filename, patterns):
+    filename_lower = filename.lower()
+    for pattern in patterns:
+        if fnmatch.fnmatchcase(filename_lower, pattern):
+            return True
+    return False
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def find_mod_data_files_directory(config, path):
+    # Get the list of directories in the morrowind data files directory
+    mw_data_files_patterns = get_data_files_dir_hints(config)
+    if not mw_data_files_patterns:
+        logging.error("Could not find any directories in the Morrowind data files directory.")
+        return None
+
+    # Find the mod data files directory
+    mod_data_files_dir = find_directory_or_filename(path, mw_data_files_patterns)
+    if not mod_data_files_dir:
+        logging.error("Could not find the mod data files directory.")
+        return None
+    return mod_data_files_dir
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -187,19 +223,19 @@ def install(config, mod):
         logging.error("Mod directory %s does not exist.", mod)
         return
 
-    # Get the list of directories in the morrowind data files directory
-    mw_data_files_dir_names = list_directories(config["morrowind_data_dir"])
-    if not mw_data_files_dir_names:
-        logging.error("Could not find any directories in the Morrowind data files directory.")
-        return
-    print(mw_data_files_dir_names)
+    # # Get the list of directories in the morrowind data files directory
+    # mw_data_files_dir_names = list_directories(config["morrowind_data_dir"])
+    # if not mw_data_files_dir_names:
+    #     logging.error("Could not find any directories in the Morrowind data files directory.")
+    #     return
+    # print(mw_data_files_dir_names)
 
     # Go to the mod subdirectory where data files are located
-    mod_data_files_dir = find_directory(mod, mw_data_files_dir_names)
+    mod_data_files_dir = find_mod_data_files_directory(config, mod) # find_directory(mod, mw_data_files_dir_names)
     if not mod_data_files_dir:
         logging.error("Could not find the mod data files directory.")
         return
-    print(mod_data_files_dir)
+    print("mod data files dir: ", mod_data_files_dir)
 
     # Copy the mod data files to the Morrowind data files directory
     copy_directory_ignore_case(mod_data_files_dir, config["morrowind_data_dir"])
