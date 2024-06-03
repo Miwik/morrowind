@@ -58,28 +58,36 @@ def list_file_paths(directory):
 # ---------------------------------------------------------------------------------------------------------------------
 
 def copy_directory_ignore_case(src, dst):
-    if not os.path.isdir(src):
-        logging.error("Source directory %s does not exist or is not a directory", src)
-        return
-    
-    if not os.path.isdir(dst):
-        logging.error("Destination directory %s does not exist or is not a directory", dst)
-        return
+    logging.info("src: %s", src)
+    logging.info("dst: %s", dst)
 
     src_file_paths = list_file_paths(src)
     dst_file_paths = list_file_paths(dst)
 
     # Cut to data files directory
-    # src_file_paths = [file[len(src):] for file in src_file_paths]
-    dst_file_paths = [file[len(dst):] for file in dst_file_paths]
+    src_file_paths = [file[len(str(src)):] for file in src_file_paths]
+    dst_file_paths = [file[len(str(dst)):] for file in dst_file_paths]
 
-    logging.info("dst_file_paths: %s", dst_file_paths)
+    # INFO:File '/Patch for Purists - Semi-Purist Fixes.ESP' already exists in destination directory '/Patch for Purists - Semi-Purist Fixes.ESP'
+    # INFO:File '/Patch for Purists.esm' already exists in destination directory '/Patch for Purists.esm'
+    # INFO:File '/Patch for Purists - Book Typos.ESP' already exists in destination directory '/Patch for Purists - Book Typos.ESP'
+    # INFO:File '/Meshes/xbase_anim.kf' already exists in destination directory '/Meshes/xbase_anim.kf'
+    # INFO:File '/Meshes/xbase_anim.kf' already exists in destination directory '/Meshes/xBase_Anim.kf'
+    # INFO:File '/Meshes/chimney_smoke_small.nif' already exists in destination directory '/Meshes/Chimney_Smoke_Small.nif'
+    # INFO:File '/Meshes/chimney_smoke_small.nif' already exists in destination directory '/Meshes/chimney_smoke_small.nif'
+    # INFO:File '/Meshes/xbase_anim_female.kf' already exists in destination directory '/Meshes/xbase_anim_female.kf'
+    # INFO:File '/Meshes/xbase_anim_female.kf' already exists in destination directory '/Meshes/xBase_Anim_Female.kf'
+    # INFO:File '/Meshes/chimney_smoke02.nif' already exists in destination directory '/Meshes/Chimney_Smoke02.nif'
+    # INFO:File '/Meshes/chimney_smoke02.nif' already exists in destination directory '/Meshes/chimney_smoke02.nif'
+    # INFO:File '/Meshes/chimney_smoke_green.nif' already exists in destination directory '/Meshes/Chimney_Smoke_Green.nif'
+    # INFO:File '/Meshes/chimney_smoke_green.nif' already exists in destination directory '/Meshes/chimney_smoke_green.nif'
+    #
+    # -> overwrite with the name of the existing destination file
 
     for src_file_path in src_file_paths:
         for dst_file_path in dst_file_paths:
             if src_file_path.lower() == dst_file_path.lower():
-                logging.info("File %s already exists in destination directory %s", src_file_path, dst_file_path)
-                break
+                logging.info("File '%s' already exists in destination directory '%s'", src_file_path, dst_file_path)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -193,7 +201,7 @@ def install(config, mod):
     if not mod_data_files_dir:
         logging.error("Could not find the mod data files directory.")
         return
-    print("mod data files dir: ", mod_data_files_dir)
+    logging.info("mod data files dir: %s", mod_data_files_dir)
 
     # Copy the mod data files to the Morrowind data files directory
     copy_directory_ignore_case(mod_data_files_dir, config["morrowind_data_dir"])
