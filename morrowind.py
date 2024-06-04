@@ -64,7 +64,7 @@ def copy_directory_ignore_case(src, dst):
     src_file_paths = list_file_paths(src)
     dst_file_paths = list_file_paths(dst)
 
-    # Cut to data files directory
+    # Cut to data files directory to compare only the file paths
     src_file_paths = [file[len(str(src)):] for file in src_file_paths]
     dst_file_paths = [file[len(str(dst)):] for file in dst_file_paths]
 
@@ -82,12 +82,20 @@ def copy_directory_ignore_case(src, dst):
     # INFO:File '/Meshes/chimney_smoke_green.nif' already exists in destination directory '/Meshes/Chimney_Smoke_Green.nif'
     # INFO:File '/Meshes/chimney_smoke_green.nif' already exists in destination directory '/Meshes/chimney_smoke_green.nif'
     #
-    # -> overwrite with the name of the existing destination file
+    # -> overwrite with the name of the existing destination file, in case of two files with the same name but different case,
+    #    choose the file with the most majs in the name and delete the lower case file
 
+    # Look for files with the same name with case insensitive comparison
     for src_file_path in src_file_paths:
+        already_exists = []
         for dst_file_path in dst_file_paths:
             if src_file_path.lower() == dst_file_path.lower():
-                logging.info("File '%s' already exists in destination directory '%s'", src_file_path, dst_file_path)
+                already_exists.append(dst_file_path)
+                # logging.info("File '%s' already exists in destination directory '%s'", src_file_path, dst_file_path)
+        if already_exists:
+            logging.info("Source file '%s' already exists in destination:", str(src) + src_file_path)
+            for dst_file_path in already_exists:
+                logging.info("  - '%s'", dst + dst_file_path)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
