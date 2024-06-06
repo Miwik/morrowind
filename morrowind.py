@@ -115,9 +115,11 @@ def list_directories(path):
 def find_directory_or_filename(start_path, target_names):
     start_path = Path(start_path)
     for dirpath, dirnames, filenames in os.walk(start_path):
+        # logging.info("dirpath: '%s', dirnames: %s, filenames: %s", dirpath, dirnames, filenames)
         for dir_name in dirnames:
-            if dir_name in target_names:
-                return Path(dirpath)
+            for target_dir in target_names:
+                if dir_name.lower() == target_dir.lower():
+                    return Path(dirpath)
         for filename in filenames:
             for target_name in target_names:
                 if fnmatch.fnmatchcase(filename.lower(), target_name):
@@ -147,6 +149,7 @@ def find_mod_data_files_directory(config, path):
     if not mw_data_files_patterns:
         logging.error("Could not find any directories in the Morrowind data files directory.")
         return None
+    logging.info("mw_data_files_patterns: %s", mw_data_files_patterns)
 
     # Find the mod data files directory
     mod_data_files_dir = find_directory_or_filename(path, mw_data_files_patterns)
