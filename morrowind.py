@@ -219,11 +219,9 @@ def install(config, mod):
 def main():
     logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.INFO)
 
-    # Load config
-    config = load_config("config.json")
-
     # Argument parser
     parser = argparse.ArgumentParser(description="Morrowind utilities.")
+    parser.add_argument("--config", default="config.json", help="Config file to use, default=config.json")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Command: start -> default
@@ -247,8 +245,11 @@ def main():
     install_parser = subparsers.add_parser("install", help="Install mod.")
     install_parser.add_argument("mod", help="Mod to install.")
 
-    # Commands execution
+    # Parse arguments & load config
     args = parser.parse_args()
+    config = load_config(args.config)
+    
+    # Commands execution
     if args.command == "start" or args.command is None:
         start(config)
     elif args.command == "launcher":

@@ -1,0 +1,7 @@
+{
+    "steam_common_dir": "/home/remi/snap/steam/common/.local/share/Steam/steamapps/common",
+    "morrowind_dir": "/home/remi/snap/steam/common/.local/share/Steam/steamapps/common/Morrowind",
+    "morrowind_dir_name": "Morrowind",
+    "morrowind_data_dir": "test/dst",
+    "openmw_dir": "/home/remi/Games/Morrowind/OpenMW/openmw-20240526"
+}
