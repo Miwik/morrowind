@@ -241,6 +241,7 @@ def install(config, mod):
     mod_data_files_dir = find_mod_data_files_directory(config, mod) # find_directory(mod, mw_data_files_dir_names)
     if not mod_data_files_dir:
         logging.error("Could not find the mod data files directory.")
+        # NOTE: Could this be a shader mod or something else that doesn't have data files?
         return
     logging.info("mod data files dir: %s", mod_data_files_dir)
 
