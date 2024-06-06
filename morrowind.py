@@ -96,6 +96,15 @@ def copy_directory_ignore_case(src, dst):
             logging.info("Source file '%s' already exists in destination:", str(src) + src_file_path)
             for dst_file_path in already_exists:
                 logging.info("  - '%s'", dst + dst_file_path)
+            # Overwrite with the name of the existing destination file
+            if len(already_exists) == 1:
+                logging.info("Copying src '%s' to dst '%s'", src + src_file_path, dst + already_exists[0])
+                # os.copyfile(src + src_file_path, dst + already_exists[0])
+                pass
+            elif len(already_exists) > 1:
+                logging.warning("Multiple files with the same name found in the destination directory.")
+                # Choose the file with the most majs in the name and delete the lower case file
+                pass
 
 # ---------------------------------------------------------------------------------------------------------------------
 
