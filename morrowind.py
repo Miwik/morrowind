@@ -57,9 +57,18 @@ def list_file_paths(directory):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
+def count_uppercase_letters(s):
+    count = 0
+    for char in s:
+        if char.isupper():
+            count += 1
+    return count
+
+# ---------------------------------------------------------------------------------------------------------------------
+
 def copy_directory_ignore_case(src, dst):
-    logging.info("src: %s", src)
-    logging.info("dst: %s", dst)
+    # logging.info("src: %s", src)
+    # logging.info("dst: %s", dst)
 
     src_file_paths = list_file_paths(src)
     dst_file_paths = list_file_paths(dst)
@@ -91,20 +100,32 @@ def copy_directory_ignore_case(src, dst):
         for dst_file_path in dst_file_paths:
             if src_file_path.lower() == dst_file_path.lower():
                 already_exists.append(dst_file_path)
-                # logging.info("File '%s' already exists in destination directory '%s'", src_file_path, dst_file_path)
-        if already_exists:
+
+        # Normal case, no file with the same name found in the destination directory
+        if len(already_exists) == 0:
+            logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + src_file_path)
+            shutil.copy2(str(src) + src_file_path, str(dst) + src_file_path)
+
+        # File with the same name found in the destination directory
+        elif len(already_exists) > 0:
             logging.info("Source file '%s' already exists in destination:", str(src) + src_file_path)
             for dst_file_path in already_exists:
-                logging.info("  - '%s'", dst + dst_file_path)
+                logging.info("  - '%s'", str(dst) + dst_file_path)
+
             # Overwrite with the name of the existing destination file
             if len(already_exists) == 1:
                 logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + already_exists[0])
-                # os.copyfile(src + src_file_path, dst + already_exists[0])
-                pass
+                shutil.copy2(str(src) + src_file_path, str(dst) + already_exists[0])
+            
+            # Choose the file to overwrite with the most majs in the name and delete the other files
             elif len(already_exists) > 1:
-                logging.warning("Multiple files with the same name found in the destination directory.")
-                # Choose the file with the most majs in the name and delete the lower case file
-                pass
+                dst_file_path = max(already_exists, key=count_uppercase_letters)
+                logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dst_file_path)
+                shutil.copy2(str(src) + src_file_path, str(dst) + dst_file_path)
+                for file_path in already_exists:
+                    if file_path != dst_file_path:
+                        logging.info("  Removing file '%s'", str(dst) + file_path)
+                        os.remove(str(dst) + file_path)
 
 # ---------------------------------------------------------------------------------------------------------------------
 
