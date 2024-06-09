@@ -104,6 +104,10 @@ def copy_directory_ignore_case(src, dst):
         # Normal case, no file with the same name found in the destination directory
         if len(already_exists) == 0:
             logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + src_file_path)
+            # Check if the directory exists, if not create it
+            dst_dir = os.path.dirname(str(dst) + src_file_path)
+            if not os.path.exists(dst_dir):
+                os.makedirs(dst_dir)
             shutil.copy2(str(src) + src_file_path, str(dst) + src_file_path)
 
         # File with the same name found in the destination directory
