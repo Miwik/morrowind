@@ -5,6 +5,7 @@ import os
 import json
 import shutil
 import fnmatch
+import re
 from pathlib import Path
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -66,7 +67,24 @@ def count_uppercase_letters(s):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def copy_directory_ignore_case(src, dst):
+def replace_dir_names(path, replacements):
+    # Split the path into components
+    path_components = path.split(os.sep)
+    
+    # Apply each pattern replacement to each component with case-insensitive matching
+    for i, component in enumerate(path_components):
+        for pattern, replacement in replacements:
+            if re.match(pattern, component, flags=re.IGNORECASE):
+                path_components[i] = re.sub(pattern, replacement, component, flags=re.IGNORECASE)
+    
+    # Join the components back into a path
+    new_path = os.sep.join(path_components)
+    
+    return new_path
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+def copy_directory_ignore_case(config, src, dst):
     # logging.info("src: %s", src)
     # logging.info("dst: %s", dst)
 
@@ -76,6 +94,14 @@ def copy_directory_ignore_case(src, dst):
     # Cut to data files directory to compare only the file paths
     src_file_paths = [file[len(str(src)):] for file in src_file_paths]
     dst_file_paths = [file[len(str(dst)):] for file in dst_file_paths]
+
+    # Build the list of replacements for directory names
+    replacements = [(replacement, replacement) for replacement in config["morrowind_data_dir_names"]]
+    logging.info("replacements: %s", replacements)
+
+    # # Replace directory names in the source file paths
+    # src_file_paths = [replace_dir_names(file, replacements) for file in src_file_paths]
+    # logging.info("src_file_paths: %s", src_file_paths)
 
     # INFO:File '/Patch for Purists - Semi-Purist Fixes.ESP' already exists in destination directory '/Patch for Purists - Semi-Purist Fixes.ESP'
     # INFO:File '/Patch for Purists.esm' already exists in destination directory '/Patch for Purists.esm'
@@ -102,13 +128,35 @@ def copy_directory_ignore_case(src, dst):
                 already_exists.append(dst_file_path)
 
         # Normal case, no file with the same name found in the destination directory
+        # INFO:1. Copying src '00 Core + Vanilla Meshes/textures/gherb/tx_cavernspore_p.dds' to 
+        # dst '/home/remi/snap/steam/common/.local/share/Steam/steamapps/common/Morrowind/Data Files/textures/gherb/tx_cavernspore_p.dds'
+        # -> Should take the Texture folder with uppercase letters in the destination directory if existing
         if len(already_exists) == 0:
-            logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + src_file_path)
+            # Replace directory names from the source file paths to create the destination file path
+            dest = replace_dir_names(src_file_path, replacements)
+            logging.info("1. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dest) #str(dst) + src_file_path)
+
+            # # /textures/gherb/t/tx_plant_13_p.dds
+            # logging.info("src_file_path: %s", src_file_path)
+            # # Check each directory from str_file_path if it exists in the destination directory with case insensitive comparison,
+            # # and replace the directory with the one that exists in the destination directory
+            # src_file_path_split = src_file_path.split("/")
+            # for i in range(1, len(src_file_path_split)):
+            #     src_file_path_dir = "/".join(src_file_path_split[:i])
+            #     logging.info("src_file_path_dir: %s", src_file_path_dir)
+            #     already_exists = []
+            #     for dst_file_path in dst_file_paths:
+            #         if src_file_path_dir.lower() == dst_file_path.lower():
+            #             already_exists.append(dst_file_path)
+            #     if len(already_exists) > 0:
+            #         src_file_path = src_file_path_dir + src_file_path[len(src_file_path_dir):]
+            #         break
+
             # Check if the directory exists, if not create it
-            dst_dir = os.path.dirname(str(dst) + src_file_path)
+            dst_dir = os.path.dirname(str(dst) + dest)
             if not os.path.exists(dst_dir):
                 os.makedirs(dst_dir)
-            shutil.copy2(str(src) + src_file_path, str(dst) + src_file_path)
+            shutil.copy2(str(src) + src_file_path, str(dst) + dest)
 
         # File with the same name found in the destination directory
         elif len(already_exists) > 0:
@@ -118,13 +166,13 @@ def copy_directory_ignore_case(src, dst):
 
             # Overwrite with the name of the existing destination file
             if len(already_exists) == 1:
-                logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + already_exists[0])
+                logging.info("2. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + already_exists[0])
                 shutil.copy2(str(src) + src_file_path, str(dst) + already_exists[0])
             
             # Choose the file to overwrite with the most majs in the name and delete the other files
             elif len(already_exists) > 1:
                 dst_file_path = max(already_exists, key=count_uppercase_letters)
-                logging.info("Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dst_file_path)
+                logging.info("3. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dst_file_path)
                 shutil.copy2(str(src) + src_file_path, str(dst) + dst_file_path)
                 for file_path in already_exists:
                     if file_path != dst_file_path:
@@ -199,6 +247,11 @@ def load_config(configfile):
     config = load_file_as_json(os.path.join(script_path, configfile))
     if not config:
         return None
+    # Create data files directories if it doesn't exist
+    for mw_data_dir_name in config["morrowind_data_dir_names"]:
+        if not os.path.isdir(os.path.join(config["morrowind_data_dir"], mw_data_dir_name)):
+            logging.info("Creating directory %s...", os.path.join(config["morrowind_data_dir"], mw_data_dir_name))
+            os.makedirs(os.path.join(config["morrowind_data_dir"], mw_data_dir_name))
     return config
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -250,7 +303,7 @@ def install(config, mod):
     logging.info("mod data files dir: %s", mod_data_files_dir)
 
     # Copy the mod data files to the Morrowind data files directory
-    copy_directory_ignore_case(mod_data_files_dir, config["morrowind_data_dir"])
+    copy_directory_ignore_case(config, mod_data_files_dir, config["morrowind_data_dir"])
 
 # ---------------------------------------------------------------------------------------------------------------------
 
