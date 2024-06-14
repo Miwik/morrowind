@@ -134,7 +134,7 @@ def copy_directory_ignore_case(config, src, dst):
         if len(already_exists) == 0:
             # Replace directory names from the source file paths to create the destination file path
             dest = replace_dir_names(src_file_path, replacements)
-            logging.info("1. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dest) #str(dst) + src_file_path)
+            # logging.info("1. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dest) #str(dst) + src_file_path)
 
             # # /textures/gherb/t/tx_plant_13_p.dds
             # logging.info("src_file_path: %s", src_file_path)
@@ -160,23 +160,23 @@ def copy_directory_ignore_case(config, src, dst):
 
         # File with the same name found in the destination directory
         elif len(already_exists) > 0:
-            logging.info("Source file '%s' already exists in destination:", str(src) + src_file_path)
-            for dst_file_path in already_exists:
-                logging.info("  - '%s'", str(dst) + dst_file_path)
+            # logging.info("Source file '%s' already exists in destination:", str(src) + src_file_path)
+            # for dst_file_path in already_exists:
+            #     logging.info("  - '%s'", str(dst) + dst_file_path)
 
             # Overwrite with the name of the existing destination file
             if len(already_exists) == 1:
-                logging.info("2. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + already_exists[0])
+                # logging.info("2. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + already_exists[0])
                 shutil.copy2(str(src) + src_file_path, str(dst) + already_exists[0])
             
             # Choose the file to overwrite with the most majs in the name and delete the other files
             elif len(already_exists) > 1:
                 dst_file_path = max(already_exists, key=count_uppercase_letters)
-                logging.info("3. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dst_file_path)
+                # logging.info("3. Copying src '%s' to dst '%s'", str(src) + src_file_path, str(dst) + dst_file_path)
                 shutil.copy2(str(src) + src_file_path, str(dst) + dst_file_path)
                 for file_path in already_exists:
                     if file_path != dst_file_path:
-                        logging.info("  Removing file '%s'", str(dst) + file_path)
+                        # logging.info("  Removing file '%s'", str(dst) + file_path)
                         os.remove(str(dst) + file_path)
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -256,9 +256,12 @@ def load_config(configfile):
 
 # ---------------------------------------------------------------------------------------------------------------------
 
-def start(config):
+def start(config, debug=False):
     logging.info("Starting Morrowind...")
-    subprocess.Popen([os.path.join(config["openmw_dir"], "openmw")])
+    if debug:
+        subprocess.Popen([os.path.join(config["openmw_dir"], "openmw"), "--script-all=1", "--script-all-dialogue=1"])
+    else:
+        subprocess.Popen([os.path.join(config["openmw_dir"], "openmw")])
     
 # ---------------------------------------------------------------------------------------------------------------------
 
@@ -342,7 +345,7 @@ def main():
     
     # Commands execution
     if args.command == "start" or args.command is None:
-        start(config)
+        start(config, True)
     elif args.command == "launcher":
         launcher(config)
     elif args.command == "navmeshtool":
